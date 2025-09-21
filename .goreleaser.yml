@@ -1,0 +1,194 @@
+# GoReleaser configuration for ember2go
+# Optimized for Apple Silicon with advanced ARM64 features
+
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+    - go mod download
+
+builds:
+  # Highly optimized ARM64 build for Apple Silicon
+  - id: darwin-arm64
+    binary: ember2go
+    env:
+      - CGO_ENABLED=0
+      - GOARM64=v8.0,lse,crypto  # Apple Silicon optimizations
+    goos:
+      - darwin
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+    gcflags:
+      - -l=4 -B -C  # Maximum inlining and optimizations
+
+  # Intel Mac build
+  - id: darwin-amd64
+    binary: ember2go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+    gcflags:
+      - -l=4 -B -C
+
+  # Linux ARM64 (for future compatibility)
+  - id: linux-arm64
+    binary: ember2go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+
+  # Linux AMD64
+  - id: linux-amd64
+    binary: ember2go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+      - -X main.builtBy=goreleaser
+
+universal_binaries:
+  # Create universal macOS binary
+  - id: darwin-universal
+    replace: false
+    name_template: ember2go
+    ids:
+      - darwin-arm64
+      - darwin-amd64
+
+archives:
+  - id: default
+    builds:
+      - darwin-arm64
+      - darwin-amd64
+      - linux-arm64
+      - linux-amd64
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    format_overrides:
+      - goos: darwin
+        format: zip
+    files:
+      - README.md
+      - LICENSE*
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^build:"
+      - "^style:"
+      - "^refactor:"
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug fixes'
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: entro314-labs
+    name: ember2go
+  name_template: "{{.ProjectName}} v{{.Version}}"
+  header: |
+    ## ember2go v{{.Version}}
+
+    High-performance Windows To Go creation tool for macOS.
+
+    ### Optimizations for Apple Silicon:
+    - ARM64 v8.0 with LSE and Crypto extensions
+    - Maximum compiler optimizations (-l=4 -B -C)
+    - Universal binary support (Intel + ARM64)
+
+  footer: |
+    ## Installation
+
+    ### Apple Silicon Macs (Recommended):
+    ```bash
+    curl -L https://github.com/entro314-labs/ember2go/releases/download/v{{.Version}}/ember2go_Darwin_arm64.zip -o ember2go.zip
+    unzip ember2go.zip
+    chmod +x ember2go
+    ```
+
+    ### Intel Macs:
+    ```bash
+    curl -L https://github.com/entro314-labs/ember2go/releases/download/v{{.Version}}/ember2go_Darwin_x86_64.zip -o ember2go.zip
+    unzip ember2go.zip
+    chmod +x ember2go
+    ```
+
+    ### Universal Binary (Both Intel + ARM64):
+    Download the universal binary for maximum compatibility.
+
+    **Full Changelog**: https://github.com/entro314-labs/ember2go/compare/{{.PreviousTag}}...{{.Tag}}
+
+brews:
+  - repository:
+      owner: entro314-labs
+      name: homebrew-tap
+    folder: Formula
+    homepage: https://github.com/entro314-labs/ember2go
+    description: High-performance Windows To Go creation tool for macOS
+    license: MIT
+    dependencies:
+      - name: wimlib
+    install: |
+      bin.install "ember2go"
+    test: |
+      system "#{bin}/ember2go", "--version"
