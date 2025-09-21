@@ -14,6 +14,7 @@ import (
 
 	"github.com/entro314-labs/ember2go/internal/bootloader"
 	"github.com/entro314-labs/ember2go/internal/disk"
+	"github.com/entro314-labs/ember2go/internal/tui"
 	"github.com/entro314-labs/ember2go/internal/wim"
 )
 
@@ -23,6 +24,7 @@ var (
 	editionIdx  int
 	forceFlag   bool
 	verboseFlag bool
+	tuiFlag     bool
 
 	// Build information (set by ldflags)
 	version   = "dev"
@@ -101,12 +103,12 @@ func init() {
 
 	// Create command flags
 	createCmd.Flags().StringVar(&isoPath, "iso", "", "Path to Windows ISO file (required)")
-	createCmd.Flags().StringVar(&diskID, "disk", "", "Target disk identifier, e.g. disk2 (required)")
+	createCmd.Flags().StringVar(&diskID, "disk", "", "Target disk identifier, e.g. disk2 (only required for CLI mode)")
 	createCmd.Flags().IntVar(&editionIdx, "edition", 1, "Windows edition index (default: 1)")
 	createCmd.Flags().BoolVar(&forceFlag, "force", false, "Skip confirmation prompts")
+	createCmd.Flags().BoolVar(&tuiFlag, "tui", true, "Use interactive TUI mode (default: true)")
 
 	createCmd.MarkFlagRequired("iso")
-	createCmd.MarkFlagRequired("disk")
 
 	// Add subcommands
 	rootCmd.AddCommand(listDisksCmd)
@@ -201,6 +203,16 @@ func runCreate(cmd *cobra.Command, args []string) error {
 	// Validate inputs
 	if _, err := os.Stat(isoPath); os.IsNotExist(err) {
 		return fmt.Errorf("ISO file not found: %s", isoPath)
+	}
+
+	// Use TUI mode by default unless disabled or disk is specified (CLI mode)
+	if tuiFlag && diskID == "" {
+		return tui.RunTUI(isoPath)
+	}
+
+	// CLI mode requires disk to be specified
+	if diskID == "" {
+		return fmt.Errorf("disk flag is required when using CLI mode (use --tui=false --disk=diskX)")
 	}
 
 	dm := disk.NewManager()
@@ -386,11 +398,22 @@ func runInstallDeps(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to install wimlib: %w", err)
 	}
 
-	// Install bootloader dependencies
-	bootloaderMgr := bootloader.NewUEFIBootloader()
-	if err := bootloaderMgr.InstallBootloaderDependencies(); err != nil {
-		return fmt.Errorf("failed to install bootloader dependencies: %w", err)
+	// Install hivex for advanced bootloader features
+	fmt.Println("Installing hivex...")
+	if err := installHivex(); err != nil {
+		fmt.Printf("Warning: failed to install hivex: %v\n", err)
+		fmt.Println("Basic bootloader functionality will still work.")
 	}
+
+	// Install any other bootloader dependencies
+	bootloaderMgr := bootloader.NewUEFIBootloader()
+	fmt.Println("Installing bootloader dependencies...")
+	if err := bootloaderMgr.InstallBootloaderDependencies(); err != nil {
+		fmt.Printf("Warning: failed to install some bootloader dependencies: %v\n", err)
+	}
+	fmt.Println("Basic bootloader functionality available")
+	fmt.Println("For advanced features, consider installing:")
+	fmt.Println("  brew install hivex")
 
 	fmt.Println("\nDependency installation completed!")
 	fmt.Println("You may need to restart your terminal for changes to take effect.")
@@ -411,7 +434,15 @@ func checkDependencies(dm *disk.Manager, parser *wim.Parser, bootloaderMgr *boot
 
 	// Check wimlib
 	if err := parser.CheckWIMLibInstalled(); err != nil {
-		fmt.Println("wimlib not found. Installing...")
+		if !forceFlag {
+			fmt.Print("wimlib not found. Install it now? (y/n): ")
+			var response string
+			fmt.Scanln(&response)
+			if strings.ToLower(response) != "y" && strings.ToLower(response) != "yes" {
+				return fmt.Errorf("wimlib is required for Windows image extraction")
+			}
+		}
+		fmt.Println("Installing wimlib...")
 		if err := installWimlib(); err != nil {
 			return fmt.Errorf("failed to install wimlib: %w", err)
 		}
@@ -423,10 +454,29 @@ func checkDependencies(dm *disk.Manager, parser *wim.Parser, bootloaderMgr *boot
 
 	fmt.Println("✅ wimlib found")
 
-	// Check BCD tools (optional but recommended)
+	// Check BCD tools (hivex) for better bootloader creation
 	if err := bootloaderMgr.CheckBootloaderTools(); err != nil {
-		fmt.Println("⚠️  BCD tools not found. Bootloader creation may be limited.")
-		fmt.Println("Consider installing: brew install hivex")
+		if !forceFlag {
+			fmt.Print("⚠️  hivex not found. This improves bootloader creation. Install it now? (y/n): ")
+			var response string
+			fmt.Scanln(&response)
+			if strings.ToLower(response) == "y" || strings.ToLower(response) == "yes" {
+				fmt.Println("Installing hivex...")
+				if err := installHivex(); err != nil {
+					fmt.Printf("Warning: failed to install hivex: %v\n", err)
+					fmt.Println("Bootloader creation may be limited.")
+				} else {
+					fmt.Println("✅ hivex installed")
+				}
+			} else {
+				fmt.Println("⚠️  BCD tools not found. Bootloader creation may be limited.")
+			}
+		} else {
+			fmt.Println("⚠️  BCD tools not found. Bootloader creation may be limited.")
+			fmt.Println("Consider installing: brew install hivex")
+		}
+	} else {
+		fmt.Println("✅ hivex found")
 	}
 
 	return nil
@@ -436,6 +486,14 @@ func installWimlib() error {
 	cmd := exec.Command("brew", "install", "wimlib")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to install wimlib via Homebrew: %w", err)
+	}
+	return nil
+}
+
+func installHivex() error {
+	cmd := exec.Command("brew", "install", "hivex")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to install hivex via Homebrew: %w", err)
 	}
 	return nil
 }
