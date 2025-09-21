@@ -33,7 +33,7 @@ chmod +x ember2go
 ### Build from Source
 ```bash
 git clone <repo-url>
-cd ember2gopy
+cd ember2go
 go build -o ember2go ./cmd/ember2go
 ```
 
