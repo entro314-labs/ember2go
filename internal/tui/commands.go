@@ -120,7 +120,7 @@ func createWindowsToGo(selectedDisk *disk.Disk, selectedEdition *wim.WindowsEdit
 		if total > 0 {
 			// Map extraction progress to 20-85% of total progress
 			extractionPercent := float64(current) / float64(total)
-			_ = 20 + int(extractionPercent * 65) // overallPercent for future use
+			_ = 20 + int(extractionPercent*65) // overallPercent for future use
 			// Note: We can't send progress updates from within this callback
 			// in the current architecture, but the message shows current status
 		}

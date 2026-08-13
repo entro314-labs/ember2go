@@ -67,8 +67,8 @@ type ProgressCallback func(current, total int64, message string)
 
 // ExtractionOptions holds options for WIM extraction
 type ExtractionOptions struct {
-	NoACLs            bool
-	NoAttributes      bool
+	NoACLs              bool
+	NoAttributes        bool
 	IncludeInvalidNames bool
 	ProgressCallback    ProgressCallback
 }

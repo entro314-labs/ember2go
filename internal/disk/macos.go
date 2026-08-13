@@ -56,7 +56,7 @@ func (m *Manager) GetRemovableDisks() ([]*Disk, error) {
 		wg.Add(1)
 		go func(identifier string) {
 			defer wg.Done()
-			semaphore <- struct{}{} // Acquire semaphore
+			semaphore <- struct{}{}        // Acquire semaphore
 			defer func() { <-semaphore }() // Release semaphore
 
 			disk, err := m.getDiskInfo(identifier)

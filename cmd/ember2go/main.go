@@ -514,4 +514,3 @@ func runVersion(cmd *cobra.Command, args []string) {
 	fmt.Printf("CPU cores: %d\n", runtime.NumCPU())
 	fmt.Printf("Compiler: %s\n", runtime.Compiler)
 }
-

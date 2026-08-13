@@ -24,32 +24,32 @@ const (
 
 type Model struct {
 	currentScreen   Screen
-	disks          []*disk.Disk
-	editions       []*wim.WindowsEdition
-	selectedDisk   int
+	disks           []*disk.Disk
+	editions        []*wim.WindowsEdition
+	selectedDisk    int
 	selectedEdition int
-	isoPath        string
-	confirmed      bool
-	progress       ProgressModel
-	err            error
-	quitting       bool
+	isoPath         string
+	confirmed       bool
+	progress        ProgressModel
+	err             error
+	quitting        bool
 }
 
 type ProgressModel struct {
-	current     int
-	total       int
-	stage       string
-	startTime   time.Time
-	lastUpdate  time.Time
-	speed       float64
-	eta         time.Duration
+	current    int
+	total      int
+	stage      string
+	startTime  time.Time
+	lastUpdate time.Time
+	speed      float64
+	eta        time.Duration
 }
 
 func NewModel(isoPath string) Model {
 	return Model{
-		currentScreen: DiskSelectionScreen,
-		isoPath:      isoPath,
-		selectedDisk: 0,
+		currentScreen:   DiskSelectionScreen,
+		isoPath:         isoPath,
+		selectedDisk:    0,
 		selectedEdition: 0,
 		progress: ProgressModel{
 			startTime: time.Now(),
@@ -355,35 +355,35 @@ func (m Model) completionView() string {
 
 var (
 	titleStyle = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(lipgloss.Color("#FAFAFA")).
-		Background(lipgloss.Color("#7D56F4")).
-		Padding(0, 1)
+			Bold(true).
+			Foreground(lipgloss.Color("#FAFAFA")).
+			Background(lipgloss.Color("#7D56F4")).
+			Padding(0, 1)
 
 	itemStyle = lipgloss.NewStyle().
-		PaddingLeft(2)
+			PaddingLeft(2)
 
 	selectedItemStyle = lipgloss.NewStyle().
-		PaddingLeft(2).
-		Foreground(lipgloss.Color("#7D56F4")).
-		Bold(true)
+				PaddingLeft(2).
+				Foreground(lipgloss.Color("#7D56F4")).
+				Bold(true)
 
 	helpStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#626262"))
+			Foreground(lipgloss.Color("#626262"))
 
 	errorStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FF5F87")).
-		Bold(true)
+			Foreground(lipgloss.Color("#FF5F87")).
+			Bold(true)
 
 	warningStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFAA00")).
-		Bold(true)
+			Foreground(lipgloss.Color("#FFAA00")).
+			Bold(true)
 
 	dangerStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FF0000")).
-		Bold(true).
-		Blink(true)
+			Foreground(lipgloss.Color("#FF0000")).
+			Bold(true).
+			Blink(true)
 
 	progressBarStyle = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#7D56F4"))
+				Foreground(lipgloss.Color("#7D56F4"))
 )
