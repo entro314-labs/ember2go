@@ -219,7 +219,7 @@ diskutil list
 
 ## Project Structure
 
-```
+```tree
 ember2go/
 ├── cmd/ember2go/main.go         # CLI application entry point
 ├── internal/
